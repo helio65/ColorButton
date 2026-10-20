@@ -1,0 +1,495 @@
+unit ColorButton;
+
+interface
+
+uses
+  System.Classes,
+  System.SysUtils,
+  System.Types,
+  Vcl.Controls,
+  Vcl.Graphics,
+  Vcl.Buttons,
+  Winapi.Windows,
+  Winapi.Messages;
+
+type
+  TColorButton = class(TCustomControl)
+  private
+    FColorEnabled: TColor;
+    FColorDisabled: TColor;
+    FColorHover: TColor;
+    FCornerRadius: Integer;
+    FPicture: TPicture;
+    FIsDown: Boolean;
+    FMouseInControl: Boolean;
+    FLayout: TButtonLayout;
+    FSpacing: Integer;
+    FFlat: Boolean;
+
+    procedure SetColorEnabled(const Value: TColor);
+    procedure SetColorDisabled(const Value: TColor);
+    procedure SetColorHover(const Value: TColor);
+    procedure SetCornerRadius(const Value: Integer);
+    procedure SetPicture(const Value: TPicture);
+    procedure SetLayout(const Value: TButtonLayout);
+    procedure SetSpacing(const Value: Integer);
+    procedure SetFlat(const Value: Boolean);
+
+    procedure PictureChanged(Sender: TObject);
+
+    procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
+    procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
+    procedure CMMouseLeave(var Message: TMessage); message CM_MOUSELEAVE;
+    procedure CMEnabledChanged(var Message: TMessage); message CM_ENABLEDCHANGED;
+
+    procedure WMSetFocus(var Message: TWMSetFocus); message WM_SETFOCUS;
+    procedure WMKillFocus(var Message: TWMKillFocus); message WM_KILLFOCUS;
+  protected
+    procedure Paint; override;
+    procedure MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
+    procedure MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer); override;
+    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+    procedure KeyUp(var Key: Word; Shift: TShiftState); override;
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+  published
+    property Align;
+    property Anchors;
+    property Caption;
+    property Color;
+    property Enabled;
+    property Font;
+    property ParentFont;
+    property ParentShowHint;
+    property ShowHint;
+    property TabOrder;
+    property TabStop default True;
+    property Visible;
+    property OnClick;
+    property OnEnter;
+    property OnExit;
+    property OnKeyDown;
+    property OnKeyPress;
+    property OnKeyUp;
+    property OnMouseDown;
+    property OnMouseEnter;
+    property OnMouseLeave;
+    property OnMouseMove;
+    property OnMouseUp;
+
+    property ColorEnabled: TColor read FColorEnabled write SetColorEnabled default clBtnFace;
+    property ColorDisabled: TColor read FColorDisabled write SetColorDisabled default clBtnFace;
+    property ColorHover: TColor read FColorHover write SetColorHover default clHighlight;
+    property CornerRadius: Integer read FCornerRadius write SetCornerRadius default 8;
+    property Flat: Boolean read FFlat write SetFlat default False;
+    property Layout: TButtonLayout read FLayout write SetLayout default blGlyphLeft;
+    property Spacing: Integer read FSpacing write SetSpacing default 4;
+    property Picture: TPicture read FPicture write SetPicture;
+  end;
+
+procedure Register;
+
+implementation
+
+uses
+  Vcl.ExtCtrls,
+  Vcl.Imaging.pngimage;
+
+type
+  TWinControlAccess = class(TWinControl);
+
+procedure Register;
+begin
+  RegisterComponents('Samples', [TColorButton]);
+end;
+
+{ TCustomColorButton }
+
+constructor TColorButton.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  DoubleBuffered := True;
+  ControlStyle := [csSetCaption, csDoubleClicks, csReplicatable];
+  Width := 75;
+  Height := 25;
+  TabStop := True;
+
+  FColorEnabled := clBtnFace;
+  FColorDisabled := clBtnFace;
+  FColorHover := clHighlight;
+  FCornerRadius := 8;
+  FFlat := False;
+  FLayout := blGlyphLeft;
+  FSpacing := 4;
+  Color := clBtnFace;
+
+  FPicture := TPicture.Create;
+  FPicture.OnChange := PictureChanged;
+end;
+
+destructor TColorButton.Destroy;
+begin
+  FPicture.Free;
+  inherited Destroy;
+end;
+
+procedure TColorButton.WMEraseBkgnd(var Message: TWMEraseBkgnd);
+begin
+  // Impede o Windows de apagar o fundo com a cor retangular padrão
+  Message.Result := 1;
+end;
+
+procedure TColorButton.PictureChanged(Sender: TObject);
+begin
+  Invalidate;
+end;
+
+procedure TColorButton.SetPicture(const Value: TPicture);
+begin
+  FPicture.Assign(Value);
+end;
+
+procedure TColorButton.SetColorEnabled(const Value: TColor);
+begin
+  if FColorEnabled <> Value then
+  begin
+    FColorEnabled := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.SetColorDisabled(const Value: TColor);
+begin
+  if FColorDisabled <> Value then
+  begin
+    FColorDisabled := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.SetColorHover(const Value: TColor);
+begin
+  if FColorHover <> Value then
+  begin
+    FColorHover := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.SetCornerRadius(const Value: Integer);
+begin
+  if (FCornerRadius <> Value) and (Value >= 0) then
+  begin
+    FCornerRadius := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.SetFlat(const Value: Boolean);
+begin
+  if FFlat <> Value then
+  begin
+    FFlat := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.SetLayout(const Value: TButtonLayout);
+begin
+  if FLayout <> Value then
+  begin
+    FLayout := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.SetSpacing(const Value: Integer);
+begin
+  if FSpacing <> Value then
+  begin
+    FSpacing := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.CMMouseEnter(var Message: TMessage);
+begin
+  inherited;
+  FMouseInControl := True;
+  Invalidate;
+end;
+
+procedure TColorButton.CMMouseLeave(var Message: TMessage);
+begin
+  inherited;
+  FMouseInControl := False;
+  Invalidate;
+end;
+
+procedure TColorButton.CMEnabledChanged(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TColorButton.WMSetFocus(var Message: TWMSetFocus);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TColorButton.WMKillFocus(var Message: TWMKillFocus);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TColorButton.MouseDown(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+  inherited;
+  if (Button = mbLeft) and Enabled then
+  begin
+    if CanFocus then
+      SetFocus;
+    FIsDown := True;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
+  inherited;
+  if FIsDown then
+  begin
+    FIsDown := False;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.KeyDown(var Key: Word; Shift: TShiftState);
+begin
+  inherited;
+  if (Key = VK_SPACE) or (Key = VK_RETURN) then
+  begin
+    FIsDown := True;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.KeyUp(var Key: Word; Shift: TShiftState);
+begin
+  inherited;
+  if FIsDown then
+  begin
+    FIsDown := False;
+    Invalidate;
+    if (Key = VK_SPACE) or (Key = VK_RETURN) then
+      Click;
+  end;
+end;
+
+procedure TColorButton.Paint;
+var
+  Buffer: Vcl.Graphics.TBitmap;
+  PaintRect, TextRect, FocusRect: TRect;
+  CurrentColor, BorderColor, ParentColor: TColor;
+  Flags: Cardinal;
+  ImgPos: TPoint;
+  ImgWidth, ImgHeight: Integer;
+  HasImage, HasText: Boolean;
+  TotalWidth, TotalHeight: Integer;
+  TextW, TextH: Integer;
+  DrawGraphic: TGraphic;
+  DrawBorder: Boolean;
+begin
+  Buffer := Vcl.Graphics.TBitmap.Create;
+  try
+    Buffer.Width := Width;
+    Buffer.Height := Height;
+
+    PaintRect := Rect(0, 0, Width, Height);
+    Flags := DT_CENTER or DT_VCENTER or DT_SINGLELINE;
+
+    // 1. Obtém a cor de fundo do contêiner pai
+    if Parent <> nil then
+      ParentColor := TWinControlAccess(Parent).Color
+    else
+      ParentColor := clBtnFace;
+
+    // Preenche o buffer com a cor do pai para garantir cantos transparentes limpos
+    Buffer.Canvas.Brush.Color := ParentColor;
+    Buffer.Canvas.Brush.Style := bsSolid;
+    Buffer.Canvas.FillRect(PaintRect);
+
+    // 2. Determina as cores de estado
+    if not Enabled then
+    begin
+      CurrentColor := FColorDisabled;
+      BorderColor := clBtnShadow;
+      DrawBorder := not FFlat;
+    end
+    else if FMouseInControl then
+    begin
+      CurrentColor := FColorHover;
+      BorderColor := clHighlight;
+      DrawBorder := True;
+    end
+    else
+    begin
+      if FColorEnabled <> clBtnFace then
+        CurrentColor := FColorEnabled
+      else
+        CurrentColor := Color;
+
+      BorderColor := clBtnShadow;
+      DrawBorder := not FFlat;
+    end;
+
+    // 3. Desenha o corpo arredondado do botão
+    Buffer.Canvas.Brush.Color := CurrentColor;
+    Buffer.Canvas.Brush.Style := bsSolid;
+
+    if DrawBorder then
+      Buffer.Canvas.Pen.Color := BorderColor
+    else
+      Buffer.Canvas.Pen.Color := CurrentColor;
+
+    Buffer.Canvas.Pen.Style := psSolid;
+
+    if (FCornerRadius > 0) then
+      Buffer.Canvas.RoundRect(0, 0, Width, Height, FCornerRadius, FCornerRadius)
+    else
+      Buffer.Canvas.Rectangle(0, 0, Width, Height);
+
+    // 4. Indicador visual de foco discreto (sem pontilhado retangular)
+    if Focused and Enabled then
+    begin
+      FocusRect := PaintRect;
+      InflateRect(FocusRect, -2, -2);
+      Buffer.Canvas.Pen.Color := clGray;
+      Buffer.Canvas.Pen.Style := psSolid;
+      Buffer.Canvas.Brush.Style := bsClear;
+
+      if FCornerRadius > 0 then
+        Buffer.Canvas.RoundRect(FocusRect.Left, FocusRect.Top, FocusRect.Right, FocusRect.Bottom, FCornerRadius - 2, FCornerRadius - 2)
+      else
+        Buffer.Canvas.Rectangle(FocusRect);
+    end;
+
+    if FIsDown then
+      OffsetRect(PaintRect, 1, 1);
+
+    // 5. Seleção e alinhamento de Imagem
+    DrawGraphic := nil;
+    if (FPicture <> nil) and (FPicture.Graphic <> nil) and not FPicture.Graphic.Empty then
+      DrawGraphic := FPicture.Graphic;
+
+    HasImage := DrawGraphic <> nil;
+    HasText := Caption <> '';
+
+    ImgWidth := 0;
+    ImgHeight := 0;
+
+    if HasImage then
+    begin
+      ImgWidth := DrawGraphic.Width;
+      ImgHeight := DrawGraphic.Height;
+    end;
+
+    Buffer.Canvas.Font := Self.Font;
+    TextW := Buffer.Canvas.TextWidth(Caption);
+    TextH := Buffer.Canvas.TextHeight(Caption);
+
+    if HasImage then
+    begin
+      if HasText then
+      begin
+        case FLayout of
+          blGlyphLeft:
+          begin
+            TotalWidth := ImgWidth + FSpacing + TextW;
+            ImgPos.X := (Width - TotalWidth) div 2;
+            ImgPos.Y := (Height - ImgHeight) div 2;
+
+            TextRect := PaintRect;
+            TextRect.Left := ImgPos.X + ImgWidth + FSpacing;
+            Flags := DT_LEFT or DT_VCENTER or DT_SINGLELINE;
+          end;
+
+          blGlyphRight:
+          begin
+            TotalWidth := ImgWidth + FSpacing + TextW;
+            ImgPos.X := (Width - TotalWidth) div 2 + TextW + FSpacing;
+            ImgPos.Y := (Height - ImgHeight) div 2;
+
+            TextRect := PaintRect;
+            TextRect.Right := ImgPos.X - FSpacing;
+            Flags := DT_RIGHT or DT_VCENTER or DT_SINGLELINE;
+          end;
+
+          blGlyphTop:
+          begin
+            TotalHeight := ImgHeight + FSpacing + TextH;
+            ImgPos.X := (Width - ImgWidth) div 2;
+            ImgPos.Y := (Height - TotalHeight) div 2;
+
+            TextRect := PaintRect;
+            TextRect.Top := ImgPos.Y + ImgHeight + FSpacing;
+            Flags := DT_CENTER or DT_TOP or DT_SINGLELINE;
+          end;
+
+          blGlyphBottom:
+          begin
+            TotalHeight := ImgHeight + FSpacing + TextH;
+            ImgPos.Y := (Height - TotalHeight) div 2 + TextH + FSpacing;
+            ImgPos.X := (Width - ImgWidth) div 2;
+
+            TextRect := PaintRect;
+            TextRect.Bottom := ImgPos.Y - FSpacing;
+            Flags := DT_CENTER or DT_BOTTOM or DT_SINGLELINE;
+          end;
+        end;
+      end
+      else
+      begin
+        ImgPos.X := (Width - ImgWidth) div 2;
+        ImgPos.Y := (Height - ImgHeight) div 2;
+      end;
+
+      if FIsDown then
+      begin
+        Inc(ImgPos.X);
+        Inc(ImgPos.Y);
+      end;
+
+      Buffer.Canvas.Draw(ImgPos.X, ImgPos.Y, DrawGraphic);
+    end;
+
+    // 6. Desenho do Texto
+    if HasText then
+    begin
+      if not Enabled then
+        Buffer.Canvas.Font.Color := clGrayText
+      else
+        Buffer.Canvas.Font.Color := Self.Font.Color;
+
+      Buffer.Canvas.Brush.Style := bsClear;
+
+      if not HasImage then
+      begin
+        TextRect := PaintRect;
+        Flags := DT_CENTER or DT_VCENTER or DT_SINGLELINE;
+      end;
+
+      DrawText(Buffer.Canvas.Handle, PChar(Caption), -1, TextRect, Flags);
+    end;
+
+    // Transferência limpa do buffer sem flicker ou travamentos na IDE
+    Canvas.Draw(0, 0, Buffer);
+  finally
+    Buffer.Free;
+  end;
+end;
+
+end.
