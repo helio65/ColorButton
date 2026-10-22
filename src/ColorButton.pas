@@ -15,7 +15,6 @@ uses
 type
   TColorButton = class(TCustomControl)
   private
-    FColorEnabled: TColor;
     FColorDisabled: TColor;
     FColorHover: TColor;
     FCornerRadius: Integer;
@@ -27,6 +26,7 @@ type
     FSpacing: Integer;
     FFlat: Boolean;
 
+    function GetColorEnabled: TColor;
     procedure SetColorEnabled(const Value: TColor);
     procedure SetColorDisabled(const Value: TColor);
     procedure SetColorHover(const Value: TColor);
@@ -37,6 +37,10 @@ type
     procedure SetFlat(const Value: Boolean);
 
     procedure PictureChanged(Sender: TObject);
+
+    // Mensagens de sistema para atualização imediata de Caption e Color
+    procedure CMTextChanged(var Message: TMessage); message CM_TEXTCHANGED;
+    procedure CMColorChanged(var Message: TMessage); message CM_COLORCHANGED;
 
     procedure WMEraseBkgnd(var Message: TWMEraseBkgnd); message WM_ERASEBKGND;
     procedure CMMouseEnter(var Message: TMessage); message CM_MOUSEENTER;
@@ -79,10 +83,11 @@ type
     property OnMouseMove;
     property OnMouseUp;
 
-    property ColorEnabled: TColor read FColorEnabled write SetColorEnabled default clBtnFace;
+    // Alias para a propriedade Color mantendo compatibilidade
+    property ColorEnabled: TColor read GetColorEnabled write SetColorEnabled default clBtnFace;
     property ColorDisabled: TColor read FColorDisabled write SetColorDisabled default clBtnFace;
     property ColorHover: TColor read FColorHover write SetColorHover default clHighlight;
-    property CornerRadius: Integer read FCornerRadius write SetCornerRadius default 8;
+    property CornerRadius: Integer read FCornerRadius write SetCornerRadius default 4;
     property Flat: Boolean read FFlat write SetFlat default False;
     property Layout: TButtonLayout read FLayout write SetLayout default blGlyphLeft;
     property Spacing: Integer read FSpacing write SetSpacing default 4;
@@ -105,7 +110,7 @@ begin
   RegisterComponents('Samples', [TColorButton]);
 end;
 
-{ TColorButton }
+{ TCustomColorButton }
 
 constructor TColorButton.Create(AOwner: TComponent);
 begin
@@ -116,10 +121,9 @@ begin
   Height := 25;
   TabStop := True;
 
-  FColorEnabled := clBtnFace;
   FColorDisabled := clBtnFace;
   FColorHover := clHighlight;
-  FCornerRadius := 8;
+  FCornerRadius := 4;
   FFlat := False;
   FLayout := blGlyphLeft;
   FSpacing := 4;
@@ -136,6 +140,32 @@ begin
   inherited Destroy;
 end;
 
+function TColorButton.GetColorEnabled: TColor;
+begin
+  Result := Color;
+end;
+
+procedure TColorButton.SetColorEnabled(const Value: TColor);
+begin
+  if Color <> Value then
+  begin
+    Color := Value;
+    Invalidate;
+  end;
+end;
+
+procedure TColorButton.CMTextChanged(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
+procedure TColorButton.CMColorChanged(var Message: TMessage);
+begin
+  inherited;
+  Invalidate;
+end;
+
 procedure TColorButton.WMEraseBkgnd(var Message: TWMEraseBkgnd);
 begin
   Message.Result := 1;
@@ -149,15 +179,6 @@ end;
 procedure TColorButton.SetPicture(const Value: TPicture);
 begin
   FPicture.Assign(Value);
-end;
-
-procedure TColorButton.SetColorEnabled(const Value: TColor);
-begin
-  if FColorEnabled <> Value then
-  begin
-    FColorEnabled := Value;
-    Invalidate;
-  end;
 end;
 
 procedure TColorButton.SetColorDisabled(const Value: TColor);
@@ -274,7 +295,6 @@ begin
     Invalidate;
   end;
 
-  // Se o botão estava pressionado e foi solto dentro dos limites do controle, dispara o OnClick
   if WasDown and Enabled and PtInRect(ClientRect, Point(X, Y)) then
     Click;
 end;
@@ -349,11 +369,7 @@ begin
     end
     else
     begin
-      if FColorEnabled <> clBtnFace then
-        CurrentColor := FColorEnabled
-      else
-        CurrentColor := Color;
-
+      CurrentColor := Color; // Usa diretamente a cor definida na propriedade Color / ColorEnabled
       BorderColor := clBtnShadow;
       DrawBorder := not FFlat;
     end;
