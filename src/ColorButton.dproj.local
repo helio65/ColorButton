@@ -2,9 +2,9 @@
 <BorlandProject>
 	<Transactions>
     <Transaction>2026/10/19 20:04:28.000.832,=rtl.dcp</Transaction>
-    <Transaction>2026/10/19 20:05:09.000.393,C:\Users\Hélio\Documents\Embarcadero\Studio\Projects\Package1.dproj=C:\Projetos\ColorButton\src\ColorButton.dproj</Transaction>
+    <Transaction>2026/10/19 20:05:09.000.393,C:\Projetos\ColorButton\src\ColorButton.dproj=C:\Users\Hélio\Documents\Embarcadero\Studio\Projects\Package1.dproj</Transaction>
     <Transaction>2026/10/19 20:05:26.000.340,=C:\Projetos\ColorButton\src\Unit1.pas</Transaction>
-    <Transaction>2026/10/19 20:06:55.000.320,C:\Projetos\ColorButton\src\Unit1.pas=C:\Projetos\ColorButton\src\ColorButton.pas</Transaction>
+    <Transaction>2026/10/19 20:06:55.000.320,C:\Projetos\ColorButton\src\ColorButton.pas=C:\Projetos\ColorButton\src\Unit1.pas</Transaction>
     <Transaction>2026/10/19 20:09:16.000.578,=vclimg.dcp</Transaction>
     <Transaction>2026/10/19 20:09:16.000.540,=vcl.dcp</Transaction>
   </Transactions>

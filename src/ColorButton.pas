@@ -105,7 +105,7 @@ begin
   RegisterComponents('Samples', [TColorButton]);
 end;
 
-{ TCustomColorButton }
+{ TColorButton }
 
 constructor TColorButton.Create(AOwner: TComponent);
 begin
@@ -237,7 +237,6 @@ end;
 procedure TColorButton.WMSetFocus(var Message: TWMSetFocus);
 begin
   inherited;
-  // Se recebeu foco sem que o botão esquerdo do mouse estivesse pressionado, assume foco via teclado
   if GetAsyncKeyState(VK_LBUTTON) >= 0 then
     FFocusFromKey := True;
   Invalidate;
@@ -255,7 +254,7 @@ begin
   inherited;
   if (Button = mbLeft) and Enabled then
   begin
-    FFocusFromKey := False; // Clique com o mouse desativa a moldura de foco
+    FFocusFromKey := False;
     if CanFocus then
       SetFocus;
     FIsDown := True;
@@ -264,13 +263,20 @@ begin
 end;
 
 procedure TColorButton.MouseUp(Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+var
+  WasDown: Boolean;
 begin
   inherited;
+  WasDown := FIsDown;
   if FIsDown then
   begin
     FIsDown := False;
     Invalidate;
   end;
+
+  // Se o botão estava pressionado e foi solto dentro dos limites do controle, dispara o OnClick
+  if WasDown and Enabled and PtInRect(ClientRect, Point(X, Y)) then
+    Click;
 end;
 
 procedure TColorButton.KeyDown(var Key: Word; Shift: TShiftState);
@@ -368,13 +374,11 @@ begin
     else
       Buffer.Canvas.Rectangle(0, 0, Width, Height);
 
-    // 4. Indicador de foco elegante em LINHA CONTÍNUA (quando focado via teclado)
+    // 4. Indicador de foco elegante em linha contínua (apenas via teclado)
     if Focused and Enabled and FFocusFromKey then
     begin
       FocusRect := PaintRect;
       InflateRect(FocusRect, -2, -2);
-
-      // Usa linha contínua fina em tom sutil (clHighlight ou clGrayText)
       Buffer.Canvas.Pen.Color := clHighlight;
       Buffer.Canvas.Pen.Style := psSolid;
       Buffer.Canvas.Pen.Width := 1;
